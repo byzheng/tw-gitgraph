@@ -1,0 +1,17 @@
+created: 20230408014511979
+modified: 20230408014632136
+tags: 
+title: $:/plugins/bangyou/tw-gitgraph/widget
+
+!! gitgraph widge
+The `gitgraph` widget creates [[gitgraph|Concept]] from tiddlers.
+
+
+!! Syntax
+```
+<$gitgraph filter="" />
+```
+
+!! Content and attributes
+|!Attributes |!Type |!Description |
+|filter |required|a filter to select tiddlers|

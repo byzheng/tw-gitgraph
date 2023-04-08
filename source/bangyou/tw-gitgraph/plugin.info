@@ -1,0 +1,14 @@
+{
+    "title": "$:/plugins/bangyou/tw-gitgraph",
+    "name": "tw-gitgraph",
+    "description": "gitgraph for tiddlywiki",
+    "author": "Bangyou Zheng",
+    "version": "0.0.1",
+    "core-version": "5.2.3",
+    "source": "https://github.com/byzheng/tw-gitgraph",
+    "list": "",
+    "parent-plugin": "",
+    "dependents": "",
+    "plugin-type": "plugin",
+    "packaged-by": "Gatha on 5th April 2023, 09:53:46"
+}

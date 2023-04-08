@@ -1,0 +1,214 @@
+created: 20221021032052993
+modified: 20230408013640102
+module-type: widget
+tags: 
+title: $:/plugins/bangyou/tw-gitgraph/widget.js
+type: application/javascript
+
+/*\
+
+gitgraph.js in tiddlywiki 5
+
+\*/
+(function(){
+
+/*jslint node: true, browser: true */
+/*global $tw: false */
+"use strict";
+
+if($tw.browser) {
+var GitgraphJS=require("$:/plugins/bangyou/tw-gitgraph/gitgraphjs/gitgraph.min.js");
+}
+
+if(typeof window !== 'undefined' && typeof window.GitgraphJS !== 'function') {
+    window.GitgraphJS = GitgraphJS;
+  }
+
+var Widget = require("$:/core/modules/widgets/widget.js").widget;
+
+var graphWidget = function(parseTreeNode,options) {
+    this.initialise(parseTreeNode,options);
+};
+
+/*
+Inherit from the base widget class
+*/
+graphWidget.prototype = new Widget();
+
+/*
+Render this widget into the DOM
+*/
+graphWidget.prototype.render = function(parent,nextSibling) {
+    if(!$tw.browser) {
+      return;
+    }
+    this.parentDomNode = parent;
+    this.computeAttributes();
+    this.execute();
+    var self = this;
+
+	// Create template without author and hash
+	var gitTemplate = GitgraphJS.templateExtend(GitgraphJS.TemplateName.Metro, {
+        commit: {
+          message: {
+            displayHash: false,
+            displayAuthor: false
+          },
+        },
+      });
+	
+	function getUUID() {
+		var d = new Date().getTime();
+		if(window.performance && typeof window.performance.now === "function"){
+			d += performance.now();
+		}
+		var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+			var r = (d + Math.random()*16)%16 | 0;
+			d = Math.floor(d/16);
+			return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+		});
+		return uuid;
+	}
+	
+	var uuid = getUUID();
+	// Create new element
+	var containerDom = document.createElement('div');
+	containerDom.id = uuid;
+
+	parent.insertBefore(containerDom, nextSibling);
+	this.domNodes.push(containerDom);
+    
+    // Get all tiddlers
+	var filter = this.filter + " +[sort[created]]";
+	var tids = $tw.wiki.filterTiddlers(filter);
+    if (tids.length === 0) {
+		containerDom.innerHTML = "No tiddlers are found.";
+		return;
+	}
+    // Create gitgraph
+	const gitgraph = GitgraphJS.createGitgraph(containerDom,
+		{
+    	template: gitTemplate
+    });
+    
+    // Use the branch-name field of first tiddler as master or main branch
+    var tid = $tw.wiki.getTiddler(tids[0]);
+    var main_branch = tid.fields["branch-name"];
+    if (typeof(main_branch) == 'undefined' | !main_branch | main_branch == "") {
+        main_branch = "main";
+    }
+    
+    
+    // Open tiddler in story 
+    //this.currentTiddler = $tw.wiki.getTiddler($tw.historyTitle).fields["current-tiddler"];
+    
+    var actionOpenTiddler = function(commit) {
+        $tw.wiki.addToStory(commit.subject);
+        
+        return;
+    };
+    
+    // store all branches
+    var graph_branches = {};
+    // store all commits
+    var graph_commits = {};
+    // create commit for each tiddler
+    for(var i=0; i<tids.length; i++) {
+        var tid = $tw.wiki.getTiddler(tids[i]);
+        // use main branch if field branch is not existed
+        var tid_branch = tid.fields["branch-name"];
+        if (typeof(tid_branch) == 'undefined' | !tid_branch | tid_branch == "") {
+            tid_branch = main_branch;
+        }
+        
+        // create new branch if not exist
+        if (typeof(graph_branches[tid_branch]) == "undefined") {
+            // get the parent branch name
+            var field_parent_branch = tid.fields["branch-from"];
+            var use_infant = false;
+            
+            if (typeof(field_parent_branch) == "undefined") {
+                // use main branch if not exist
+                use_infant = true;
+            } else if (typeof(graph_branches[field_parent_branch]) == "undefined") {
+                // use main branch if parent branch is not already created
+                use_infant = true;
+            } else if (field_parent_branch == main_branch | 
+                !field_parent_branch | 
+                field_parent_branch == "" |
+                field_parent_branch == "main" |
+                field_parent_branch == "master") {
+                // use main branch (no matter about the name) for main or master
+                field_parent_branch = main_branch
+                use_infant = false;
+            }
+             
+            // create branch
+            if (use_infant) {
+                graph_branches[tid_branch] = gitgraph.branch(tid_branch)
+            } else {
+                graph_branches[tid_branch] = graph_branches[field_parent_branch].branch(tid_branch)
+            }
+        }
+        
+        // create new commit
+		graph_commits[tids[i]] = graph_branches[tid_branch].commit(
+            {
+                subject: tids[i],
+                onMessageClick: actionOpenTiddler,
+                onClick: actionOpenTiddler
+            })
+        // merge branch
+        var field_merge_to = tid.fields["merge-to"];
+        var is_merge = true;
+        if (typeof(field_merge_to) == "undefined") {
+            // no merge if merge-to is not defined
+            is_merge = false;
+        } else if (typeof(graph_branches[field_merge_to]) == "undefined") {
+            // no merge if merge-to branch is not created
+            is_merge = false;
+        } 
+        if (tid_branch == main_branch) {
+            // no merge if main branch
+            is_merge = false;
+        }
+        // merge branch
+        if (is_merge) {
+            // use message 
+            var field_merge_message = tid.fields["merge-message"];
+            if (typeof(field_merge_message) == "undefined") {
+                graph_branches[field_merge_to].merge(graph_branches[tid_branch]);
+            } else {
+                graph_branches[field_merge_to].merge(graph_branches[tid_branch], field_merge_message);
+            }
+        }
+            
+	}
+    
+};
+
+	
+	
+graphWidget.prototype.refresh = function(changedTiddlers) {
+    //DEBUG   console.log("changedtiddlers=",changedTiddlers);
+
+    var dirty=false,t;
+    this.computeAttributes();
+    this.execute();
+    var self = this;
+	  this.refreshSelf();
+    return true;
+};
+
+/*
+Compute the internal state of the widget
+*/
+graphWidget.prototype.execute = function() {
+   // Get parameters from our attributes
+   this.filter = this.getAttribute("filter");
+};
+
+
+exports.gitgraph = graphWidget;
+
+})();
