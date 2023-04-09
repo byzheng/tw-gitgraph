@@ -1,5 +1,5 @@
 created: 20221021032052993
-modified: 20230409003139716
+modified: 20230409035343016
 module-type: widget
 tags: 
 title: $:/plugins/bangyou/tw-gitgraph/widget.js
@@ -259,8 +259,9 @@ Compute the internal state of the widget
 graphWidget.prototype.execute = function() {
     // Get parameters from our attributes
     this.filter = this.getAttribute("filter");
+    this.sort = this.getAttribute("sort", "created");
     // Get all tiddlers
-    var filter_sort = this.filter + " +[sort[created]]";
+    var filter_sort = this.filter + " +[sort[" + this.sort + "]]";
     this.tids = $tw.wiki.filterTiddlers(filter_sort);
 };
 

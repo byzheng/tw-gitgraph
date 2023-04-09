@@ -1,5 +1,5 @@
 created: 20230408014511979
-modified: 20230408014632136
+modified: 20230409035654574
 tags: 
 title: $:/plugins/bangyou/tw-gitgraph/widget
 
@@ -15,3 +15,4 @@ The `gitgraph` widget creates [[gitgraph|Concept]] from tiddlers.
 !! Content and attributes
 |!Attributes |!Type |!Description |
 |filter |required|a filter to select tiddlers|
+|sort   |optional|a field to sort out tiddlers. `created` in default|
