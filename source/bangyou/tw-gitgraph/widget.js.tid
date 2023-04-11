@@ -1,9 +1,10 @@
 created: 20221021032052993
-modified: 20230409035343016
+modified: 20230411221836050
 module-type: widget
 tags: 
 title: $:/plugins/bangyou/tw-gitgraph/widget.js
 type: application/javascript
+
 
 /*\
 
@@ -47,8 +48,8 @@ graphWidget.prototype.render = function(parent,nextSibling) {
     this.execute();
     var self = this;
 
-	// Create template without author and hash
-	var gitTemplate = GitgraphJS.templateExtend(GitgraphJS.TemplateName.Metro, {
+    // Create template without author and hash
+    var gitTemplate = GitgraphJS.templateExtend(GitgraphJS.TemplateName.Metro, {
         commit: {
           message: {
             displayHash: false,
@@ -56,24 +57,24 @@ graphWidget.prototype.render = function(parent,nextSibling) {
           },
         },
       });
-	
-	this.containerid = (new Date()).valueOf();
-	// Create new element
-	var containerDom = document.createElement('div');
-	containerDom.id = this.containerid;
+    
+    this.containerid = (new Date()).valueOf();
+    // Create new element
+    var containerDom = document.createElement('div');
+    containerDom.id = this.containerid;
 
-	parent.insertBefore(containerDom, nextSibling);
-	this.domNodes.push(containerDom);
+    parent.insertBefore(containerDom, nextSibling);
+    this.domNodes.push(containerDom);
     
     var tids = this.tids;
     if (tids.length === 0) {
-		containerDom.innerHTML = "No tiddlers are found.";
-		return;
-	}
+        containerDom.innerHTML = "No tiddlers are found.";
+        return;
+    }
     // Create gitgraph
-	const gitgraph = GitgraphJS.createGitgraph(containerDom,
-		{
-    	template: gitTemplate
+    const gitgraph = GitgraphJS.createGitgraph(containerDom,
+        {
+        template: gitTemplate
     });
     
     // Use the branch-name field of first tiddler as master or main branch
@@ -85,11 +86,17 @@ graphWidget.prototype.render = function(parent,nextSibling) {
     
     
     // Open tiddler in story 
-    //this.currentTiddler = $tw.wiki.getTiddler($tw.historyTitle).fields["current-tiddler"];
+    var tiddlerTitle = this.getAttribute("tiddler", this.getVariable("currentTiddler"));
+    var openLinkFromInsideRiver = $tw.wiki.getTiddler("$:/config/Navigation/openLinkFromInsideRiver").fields.text;
+    var openLinkFromOutsideRiver=$tw.wiki.getTiddler("$:/config/Navigation/openLinkFromOutsideRiver").fields.text
+    var the_story = new $tw.Story({wiki: $tw.wiki});
     
     var actionOpenTiddler = function(commit) {
-        $tw.wiki.addToStory(commit.subject);
-        
+        the_story.addToStory(commit.subject, tiddlerTitle, {
+            openLinkFromInsideRiver: openLinkFromInsideRiver,
+            openLinkFromOutsideRiver: openLinkFromOutsideRiver
+        });
+        the_story.addToHistory(commit.subject);
         return;
     };
     
@@ -137,7 +144,7 @@ graphWidget.prototype.render = function(parent,nextSibling) {
         }
         
         // create new commit
-		graph_commits[tids[i]] = graph_branches[tid_branch].commit(
+        graph_commits[tids[i]] = graph_branches[tid_branch].commit(
             {
                 subject: tids[i],
                 onMessageClick: actionOpenTiddler,
@@ -168,12 +175,12 @@ graphWidget.prototype.render = function(parent,nextSibling) {
             }
         }
             
-	}
+    }
     
 };
 
-	
-	
+    
+    
 graphWidget.prototype.refresh = function(changedTiddlers) {
     //DEBUG   console.log("changedtiddlers=",changedTiddlers);
 
@@ -244,7 +251,7 @@ graphWidget.prototype.refresh = function(changedTiddlers) {
           break;
         }
     }
-	//Refresh if dirty
+    //Refresh if dirty
     if (dirty) {
        this.refreshSelf();
        return true;
